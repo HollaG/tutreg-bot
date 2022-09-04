@@ -1,12 +1,12 @@
 {
     "compilerOptions": {
-      "module": "es2022",
+      "module": "es2015",
       "esModuleInterop": true,
       "target": "ES2017",
       "moduleResolution": "node",
       "strict": true,
       "sourceMap": true,
-      "lib": ["es2021"],
+      "lib": ["ES2017"],
       "skipLibCheck": true,
       "rootDir": "src",
       "outDir": "dist"
