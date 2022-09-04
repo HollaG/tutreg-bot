@@ -35,8 +35,8 @@ import cron from "cron";
 
     bot.launch().then(() => console.log("Bot is running!"));
 
-    const URL = `http://172.19.166.15/swap/`;
-    const messageBuilder = (
+    const URL = process.env.URL; // ends with slash
+    const messageBuilder = ( 
         swapsToNotify: SwapToNotify[],
         users: TelegramUser[]
     ) => {
