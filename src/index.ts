@@ -29,14 +29,16 @@ import cron from "cron";
         })
         .then((conn) => conn);
 
-
-
-    bot.start((ctx) => ctx.reply("Welcome!"));
+    bot.start((ctx) =>
+        ctx.reply(
+            "Welcome! Head over to https://tutreg.com to make your first swap request!"
+        )
+    );
 
     bot.launch().then(() => console.log("Bot is running!"));
 
     const URL = process.env.URL; // ends with slash
-    const messageBuilder = ( 
+    const messageBuilder = (
         swapsToNotify: SwapToNotify[],
         users: TelegramUser[]
     ) => {
