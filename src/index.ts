@@ -105,7 +105,7 @@ import {
 
             // get the classes that the other person has and wants to swap with original
             // might be more than 1 class
-            console.log(process.env.AY, process.env.SEM);
+
             const [otherClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
                 await conn.query(
                     `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,

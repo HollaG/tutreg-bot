@@ -95,7 +95,7 @@ export const buildMessage = (
 ) => {
     let header = `❗️ <a href='${ROOT_URL}swap/${swap.swapId}'><b>Swap request update</b></a> ❗️\n\nHi ${swap.first_name},\n\n`;
 
-    header += `<a href='t.me/${otherRequestor.username}'>${otherRequestor.first_name}</a> has requested to swap their\n<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swapReplyRequest.requested.moduleCode}</a> ${swapReplyRequest.requested.lessonType} 「${swapReplyRequest.requested.classNo}」</b>\n`;
+    header += `<a href='t.me/${otherRequestor.username}'>${otherRequestor.first_name}</a> has requested to swap their\n<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swapReplyRequest.requested.moduleCode}</a> ${swapReplyRequest.requested.lessonType} [${swapReplyRequest.requested.classNo}]</b>\n`;
 
     otherClasses.forEach((c, i) => {
         header += `${
@@ -108,7 +108,7 @@ export const buildMessage = (
     header += `\n`;
 
     header += `for your\n\n`;
-    header += `<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swap.moduleCode}</a> ${swap.lessonType}「${swap.classNo}」</b>\n`;
+    header += `<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swap.moduleCode}</a> ${swap.lessonType} [${swap.classNo}]</b>\n`;
     creatorClasses.forEach((c, i) => {
         header += `${
             i !== otherClasses.length - 1 ? "├" : "└"
