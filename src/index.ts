@@ -108,7 +108,7 @@ import {
             console.log(process.env.AY, process.env.SEM);
             const [otherClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
                 await conn.query(
-                    `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classList.moduleCode = ? AND classList.lessonType = ? AND classList.classNo = ?`,
+                    `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,
                     [
                         process.env.AY,
                         process.env.SEM,
@@ -128,7 +128,7 @@ import {
             // get the creator's class
             const [creatorClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
                 await conn.query(
-                    `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classList.moduleCode = ? AND classList.lessonType = ? AND classList.classNo = ?`,
+                    `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,
                     [
                         process.env.AY,
                         process.env.SEM,
