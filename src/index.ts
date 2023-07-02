@@ -13,11 +13,19 @@ import {
     ClassSwapRequest,
     ClassSwapRequestDB,
     ExtendedUser,
+    SwapReplies,
     SwapToNotify,
     TelegramUser,
 } from "./types/types";
 import { cleanArrayString } from "./lib/functions.js";
 import cron from "cron";
+import { addCollectionListener, buildMessage, signIn } from "./lib/firebase";
+import {
+    QuerySnapshot,
+    DocumentData,
+    setDoc,
+    updateDoc,
+} from "firebase/firestore";
 (async () => {
     const conn = await db
         .createConnection({
@@ -29,13 +37,105 @@ import cron from "cron";
         })
         .then((conn) => conn);
 
+    const signedInSuccessfully = await signIn();
+
+    if (signedInSuccessfully) {
+        console.log("Signed in successfully!");
+    } else {
+        console.error("Failed to sign in!");
+        return;
+    }
+
     bot.start((ctx) =>
         ctx.reply(
             "Welcome! Head over to https://tutreg.com to make your first swap request!"
         )
     );
 
-    bot.launch().then(() => console.log("Bot is running!"));
+    const launched = await bot.launch();
+    console.log("Bot is running!");
+
+    const onUpdate = async (snapshot: QuerySnapshot<DocumentData>) => {
+        console.log("Recieved a live update!");
+        snapshot.docChanges().forEach(async (change) => {
+            const data = change.doc.data() as SwapReplies;
+            if (!data) return;
+
+            const requests = data.requests;
+            const swapId = data.swapId;
+
+            // check to see if there are any new requests that have status 'new' --> not been notified
+            console.log(JSON.stringify(requests, null, 2));
+            const newRequestsToNotify = requests.filter(
+                (request) => request.requested[0].status === "new"
+            );
+
+            // since we don't use batched requests, there should only be one new request at all times.
+            if (newRequestsToNotify.length !== 1) {
+                // no new requests to notify
+                return;
+            }
+
+            const newRequestToNotify = newRequestsToNotify[0];
+
+            const [swaps]: [
+                (ClassSwapRequest & { can_notify: boolean })[],
+                db.FieldPacket[]
+            ] = await conn.query(
+                `SELECT * FROM swaps LEFT JOIN users ON swaps.from_t_id = users.id WHERE swapId = ?`,
+                [swapId]
+            );
+
+            if (!swaps.length)
+                return console.log("ERROR: no swaps with this id");
+            const swap = swaps[0];
+            const [otherRequestorArray]: [ExtendedUser[], db.FieldPacket[]] =
+                await conn.query(`SELECT * FROM users WHERE id = ?`, [
+                    newRequestToNotify.requestorId,
+                ]);
+            if (!otherRequestorArray.length)
+                return console.log("ERROR: no user with this id");
+
+            const otherRequestor = otherRequestorArray[0];
+            console.log({ swap, otherRequestor });
+
+            if (!swap.can_notify) {
+                return console.log("ERROR: user has disabled notifications");
+            }
+
+            // build a message to send
+            const msg = buildMessage(newRequestToNotify, swap, otherRequestor);
+
+            bot.telegram.sendMessage(swap.from_t_id, msg, {
+                parse_mode: "HTML",
+            });
+
+            // update the request to 'notified'
+            updateDoc(change.doc.ref, {
+                requests: requests.map((req) => {
+                    if (req.requested[0].status === "new") {
+                        // update this request to 'notified'
+                        return {
+                            ...req,
+                            requested: [
+                                {
+                                    ...req.requested[0],
+                                    status: "notified",
+                                },
+                            ],
+                            lastUpdated: new Date(),
+                        };
+                    } else {
+                        return req;
+                    }
+                }),
+            });
+        });
+    };
+
+    const unsubscribe = addCollectionListener({
+        next: onUpdate,
+    });
 
     const URL = process.env.URL; // ends with slash
     const messageBuilder = (

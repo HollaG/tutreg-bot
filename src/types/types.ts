@@ -28,10 +28,11 @@ export interface ClassSwapRequestDB extends db.RowDataPacket {
     createdAt: Date;
 }
 
-
 export type ClassSwapFor = {
     rowId: number;
     wantedClassNo: string;
+    wantedModuleCode: string;
+    wantedLessonType: string;
     swapId: number;
 };
 
@@ -70,20 +71,41 @@ export type ClassDB = {
     lastUpdated: Date;
     ay: string;
     sem: number;
-    size: number,
-    day: string
+    size: number;
+    day: string;
 };
 
 export type ModuleWithClassDB = ClassDB & ModuleDB;
-
 
 export interface SwapToNotify {
     swap: ClassSwapRequest;
     newRequestors: string[];
     removedRequestors: string[];
-    unchangedRequestors: string[]
+    unchangedRequestors: string[];
 }
 
 export interface ExtendedUser extends TelegramUser {
     can_notify: boolean;
+}
+
+export type HalfInfo = {
+    moduleCode: string;
+    lessonType: string;
+};
+export type FullInfo = HalfInfo & {
+    classNo: string;
+};
+
+export type Request = FullInfo & {
+    status: "new" | "notified" | "deleted";
+};
+export type SwapReplyRequest = {
+    requestorId: number; // Telegram id
+    requested: Request[];
+    lastUpdated: Date;
+};
+
+export interface SwapReplies {
+    swapId: number;
+    requests: SwapReplyRequest[];
 }
