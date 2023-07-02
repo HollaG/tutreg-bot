@@ -1,6 +1,6 @@
 import { Context, Telegraf } from "telegraf";
 import { Update } from "typegram";
-// import executeQuery from "./db";
+
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -13,6 +13,7 @@ import {
     ClassSwapRequest,
     ClassSwapRequestDB,
     ExtendedUser,
+    ModuleWithClassDB,
     SwapReplies,
     SwapToNotify,
     TelegramUser,
@@ -62,10 +63,10 @@ import {
             if (!data) return;
 
             const requests = data.requests;
-            const swapId = data.swapId;
+            const swapId = change.doc.id;
 
             // check to see if there are any new requests that have status 'new' --> not been notified
-            console.log(JSON.stringify(requests, null, 2));
+            // console.log(JSON.stringify(requests, null, 2));
             const newRequestsToNotify = requests.filter(
                 (request) => request.requested.status === "new"
             );
@@ -73,7 +74,7 @@ import {
             // since we don't use batched requests, there should only be one new request at all times.
             if (newRequestsToNotify.length !== 1) {
                 // no new requests to notify
-                return;
+                return console.log("No new requests to notify");
             }
 
             const newRequestToNotify = newRequestsToNotify[0];
@@ -97,14 +98,58 @@ import {
                 return console.log("ERROR: no user with this id");
 
             const otherRequestor = otherRequestorArray[0];
-            console.log({ swap, otherRequestor });
 
             if (!swap.can_notify) {
                 return console.log("ERROR: user has disabled notifications");
             }
 
+            // get the classes that the other person has and wants to swap with original
+            // might be more than 1 class
+            console.log(process.env.AY, process.env.SEM);
+            const [otherClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
+                await conn.query(
+                    `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classList.moduleCode = ? AND classList.lessonType = ? AND classList.classNo = ?`,
+                    [
+                        process.env.AY,
+                        process.env.SEM,
+                        newRequestToNotify.requested.moduleCode,
+                        newRequestToNotify.requested.lessonType,
+                        newRequestToNotify.requested.classNo,
+                    ]
+                );
+
+            if (!otherClasses.length) {
+                // TODO: refresh
+                return console.log(
+                    "ERROR: Could not find the class that the other person wants to swap with original"
+                );
+            }
+
+            // get the creator's class
+            const [creatorClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
+                await conn.query(
+                    `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classList.moduleCode = ? AND classList.lessonType = ? AND classList.classNo = ?`,
+                    [
+                        process.env.AY,
+                        process.env.SEM,
+                        swap.moduleCode,
+                        swap.lessonType,
+                        swap.classNo,
+                    ]
+                );
+
+            if (!creatorClasses.length) {
+                return console.log("ERROR: Could not find the creator's class");
+            }
+
             // build a message to send
-            const msg = buildMessage(newRequestToNotify, swap, otherRequestor);
+            const msg = buildMessage(
+                newRequestToNotify,
+                swap,
+                otherRequestor,
+                otherClasses,
+                creatorClasses
+            );
 
             bot.telegram.sendMessage(swap.from_t_id, msg, {
                 parse_mode: "HTML",
@@ -117,12 +162,11 @@ import {
                         // update this request to 'notified'
                         return {
                             ...req,
-                            requested: [
-                                {
-                                    ...req.requested,
-                                    status: "notified",
-                                },
-                            ],
+                            requested: {
+                                ...req.requested,
+                                status: "notified",
+                            },
+
                             lastUpdated: new Date(),
                         };
                     } else {

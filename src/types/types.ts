@@ -1,4 +1,4 @@
-import db from "mysql2/promise";
+import db, { RowDataPacket } from "mysql2/promise";
 export interface ClassSwapRequest extends TelegramUser {
     swapId: number;
     moduleCode: string;
@@ -75,7 +75,8 @@ export type ClassDB = {
     day: string;
 };
 
-export type ModuleWithClassDB = ClassDB & ModuleDB;
+// export type ModuleWithClassDB = ClassDB & ModuleDB;
+export interface ModuleWithClassDB extends ModuleDB, ClassDB, RowDataPacket {}
 
 export interface SwapToNotify {
     swap: ClassSwapRequest;
@@ -101,6 +102,7 @@ export type Request = FullInfo & {
 };
 export type SwapReplyRequest = {
     requestorId: number; // Telegram id
+    requestorName: string;
     requested: Request;
     lastUpdated: Date;
 };

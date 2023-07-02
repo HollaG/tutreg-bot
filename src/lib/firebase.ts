@@ -20,8 +20,10 @@ import {
 import {
     ClassSwapRequest,
     ExtendedUser,
+    ModuleWithClassDB,
     SwapReplyRequest,
 } from "../types/types";
+import { convertDayToAbbrev } from "./functions";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -87,13 +89,35 @@ const ROOT_URL = process.env.ROOT_URL;
 export const buildMessage = (
     swapReplyRequest: SwapReplyRequest,
     swap: ClassSwapRequest,
-    otherRequestor: ExtendedUser
+    otherRequestor: ExtendedUser,
+    otherClasses: ModuleWithClassDB[],
+    creatorClasses: ModuleWithClassDB[]
 ) => {
     let header = `❗️ <a href='${ROOT_URL}swap/${swap.swapId}'><b>Swap request update</b></a> ❗️\n\nHi ${swap.first_name},\n\n`;
 
-    header += `<a href='t.me/${otherRequestor.username}'>${otherRequestor.first_name}</a> has requested to swap their\n<b>${swapReplyRequest.requested.moduleCode} ${swapReplyRequest.requested.lessonType} ${swapReplyRequest.requested.classNo}</b>\n\n`;
+    header += `<a href='t.me/${otherRequestor.username}'>${otherRequestor.first_name}</a> has requested to swap their\n<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swapReplyRequest.requested.moduleCode}</a> ${swapReplyRequest.requested.lessonType} 「${swapReplyRequest.requested.classNo}」</b>\n`;
+
+    otherClasses.forEach((c, i) => {
+        header += `${
+            i !== otherClasses.length - 1 ? "├" : "└"
+        } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${c.endTime} @ ${
+            c.venue
+        }\n`;
+    });
+
+    header += `\n`;
+
     header += `for your\n\n`;
-    header += `<b>${swap.moduleCode} ${swap.lessonType} ${swap.classNo}</b>\n\n`;
+    header += `<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swap.moduleCode}</a> ${swap.lessonType}「${swap.classNo}」</b>\n`;
+    creatorClasses.forEach((c, i) => {
+        header += `${
+            i !== otherClasses.length - 1 ? "├" : "└"
+        } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${c.endTime} @ ${
+            c.venue
+        }\n`;
+    });
+
+    header += `\n`;
 
     header += `Contact them <a href='t.me/${otherRequestor.username}'> here </a> to discuss further.\n\n`;
     return header;
