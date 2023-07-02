@@ -67,7 +67,7 @@ import {
             // check to see if there are any new requests that have status 'new' --> not been notified
             console.log(JSON.stringify(requests, null, 2));
             const newRequestsToNotify = requests.filter(
-                (request) => request.requested[0].status === "new"
+                (request) => request.requested.status === "new"
             );
 
             // since we don't use batched requests, there should only be one new request at all times.
@@ -113,13 +113,13 @@ import {
             // update the request to 'notified'
             updateDoc(change.doc.ref, {
                 requests: requests.map((req) => {
-                    if (req.requested[0].status === "new") {
+                    if (req.requested.status === "new") {
                         // update this request to 'notified'
                         return {
                             ...req,
                             requested: [
                                 {
-                                    ...req.requested[0],
+                                    ...req.requested,
                                     status: "notified",
                                 },
                             ],

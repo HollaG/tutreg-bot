@@ -91,7 +91,7 @@ export const buildMessage = (
 ) => {
     let header = `❗️ <a href='${ROOT_URL}swap/${swap.swapId}'><b>Swap request update</b></a> ❗️\n\nHi ${swap.first_name},\n\n`;
 
-    header += `<a href='t.me/${otherRequestor.username}'>${otherRequestor.first_name}</a> has requested to swap their\n<b>${swapReplyRequest.requested[0].moduleCode} ${swapReplyRequest.requested[0].lessonType} ${swapReplyRequest.requested[0].classNo}</b>\n\n`;
+    header += `<a href='t.me/${otherRequestor.username}'>${otherRequestor.first_name}</a> has requested to swap their\n<b>${swapReplyRequest.requested.moduleCode} ${swapReplyRequest.requested.lessonType} ${swapReplyRequest.requested.classNo}</b>\n\n`;
     header += `for your\n\n`;
     header += `<b>${swap.moduleCode} ${swap.lessonType} ${swap.classNo}</b>\n\n`;
 
