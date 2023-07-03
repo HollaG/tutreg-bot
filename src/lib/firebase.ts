@@ -45,7 +45,7 @@ const app = initializeApp(firebaseConfig);
 const fireDb = getFirestore(app);
 const auth = getAuth(app);
 
-export const COLLECTION_NAME = "requests";
+export const COLLECTION_NAME = process.env.COLLECTION_NAME || "requests";
 
 // Sign in
 const adminUser = process.env.ADMIN_USER;
