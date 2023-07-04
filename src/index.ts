@@ -126,13 +126,6 @@ import {
             }
 
             // get the creator's class
-            console.log([
-                process.env.AY,
-                process.env.SEM,
-                swap.moduleCode,
-                swap.lessonType,
-                swap.classNo,
-            ]);
             const [creatorClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
                 await conn.query(
                     `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,
