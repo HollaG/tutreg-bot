@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import { bot } from ".";
 
 const app = express();
-const PORT = 9000;
+const PORT = Number(process.env.PORT) || 9000;
 
 app.use(express.json());
 
