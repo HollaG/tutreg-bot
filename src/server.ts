@@ -84,6 +84,7 @@ app.post(
   }
 );
 
+const feedback = `<i><a href='https://forms.gle/BUKeoGLq5SQ9Kg8W9'>Provide feedback</a> (much appreciated)!</i>`;
 const handleSwapCreated = (
   body: SendMessageRequest,
   swap: ClassSwapRequestDB
@@ -139,7 +140,7 @@ export const handleRequestedSwapCompleted = (
   const header = `✅ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap request completed</b></a> ✅\n\n`;
   const msg =
     header +
-    `Hi ${body.name}, the class <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b> that you requested for has been swapped. \n<i>If the creator did not contact you, this means that they are not interested in swapping with you anymore. Feel free to create a new swap request if you wish to swap with someone else. Thank you for using TutReg!</i>`;
+    `Hi ${body.name}, the class <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b> that you requested for has been swapped. \n\n<i>If the creator did not contact you, this means the swap has been completed with someone else. Feel free to create a new swap request if you still wish for a swap. Thank you for using TutReg!</i>\n\n${feedback}`;
   bot.telegram.sendMessage(body.t_id, msg, {
     parse_mode: "HTML",
   });
@@ -151,7 +152,7 @@ export const handleCreatedSwapCompleted = (
   const header = `✅ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap completed</b></a> ✅\n\n`;
   const msg =
     header +
-    `Hi ${body.name}, your swap for <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b> has been marked as complete. Thank you for using TutReg!`;
+    `Hi ${body.name}, your swap for <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b> has been marked as complete. Thank you for using TutReg!\n\n${feedback}`;
   bot.telegram.sendMessage(body.t_id, msg, {
     parse_mode: "HTML",
   });
