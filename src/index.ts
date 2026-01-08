@@ -92,6 +92,7 @@ import {
           );
 
         if (swaps.length === 0) {
+          ctx.answerCbQuery();
           return ctx.reply("Swap not found or you are not the creator.");
         }
 
@@ -273,7 +274,7 @@ import {
                 [
                   {
                     text: "View swap request",
-                    url: `${ROOT_URL}swap/${swap.swap_id}`,
+                    url: `${ROOT_URL}swap/${swap.swapId}`,
                   },
                   // {
                   //   text: "Share swap request",
@@ -283,7 +284,7 @@ import {
                 [
                   {
                     text: "Complete swap ✅",
-                    callback_data: `complete_${swap.swap_id}_${swap.from_t_id}`,
+                    callback_data: `complete_${swap.swapId}_${swap.from_t_id}`,
                   },
                 ],
               ],
