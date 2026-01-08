@@ -1,12 +1,11 @@
 import { Context, Telegraf } from "telegraf";
-import { Update } from "typegram";
 
 import dotenv from "dotenv";
 dotenv.config();
 
 import "./server"; // Start the Express server
 
-export const bot: Telegraf<Context<Update>> = new Telegraf(
+export const bot: Telegraf<Context> = new Telegraf(
   process.env.BOT_TOKEN as string
 );
 
