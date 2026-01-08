@@ -24,6 +24,7 @@ import {
   SwapReplyRequest,
 } from "../types/types";
 import { convertDayToAbbrev } from "./functions";
+import { ROOT_URL } from "../server";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -42,7 +43,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const fireDb = getFirestore(app);
+export const fireDb = getFirestore(app);
 const auth = getAuth(app);
 
 export const COLLECTION_NAME = process.env.COLLECTION_NAME || "requests";
@@ -81,7 +82,6 @@ export const addCollectionListener = (onUpdate: {
   // doc(documentPath).onSnapshot(onUpdate);
 };
 
-const ROOT_URL = process.env.ROOT_URL;
 export const buildSwapRequestMessage = (
   swapReplyRequest: SwapReplyRequest,
   swap: ClassSwapRequest,

@@ -24,6 +24,8 @@ import cron from "cron";
 import {
   addCollectionListener,
   buildSwapRequestMessage,
+  COLLECTION_NAME,
+  fireDb,
   signIn,
 } from "./lib/firebase";
 import {
@@ -31,7 +33,15 @@ import {
   DocumentData,
   setDoc,
   updateDoc,
+  getDoc,
+  doc,
 } from "firebase/firestore";
+import {
+  handleCreatedSwapCompleted,
+  handleRequestedSwapCompleted,
+  ROOT_URL,
+  UserEvent,
+} from "./server";
 (async () => {
   const conn = await db
     .createConnection({
@@ -58,8 +68,102 @@ import {
     )
   );
 
-  const launched = await bot.launch();
+  bot.launch();
   console.log("Bot is running!");
+
+  bot.on("callback_query", async (ctx) => {
+    try {
+      console.log("callback query for complete");
+      console.log(JSON.stringify(ctx.callbackQuery, null, 2));
+      const cbData = ctx.callbackQuery;
+
+      // @ts-expect-error
+      const cId = cbData.data;
+
+      const [id, swapId, tId] = (cId as string).split("_");
+
+      if (id === "complete") {
+        /** The following code is duplicated from the main tutreg repository: pages\api\swap\[swapId].ts:295 */
+        // get the swap
+        const [swaps]: [ClassSwapRequestDB[], db.FieldPacket[]] =
+          await conn.query(
+            "SELECT * FROM swaps WHERE swapId = ? AND from_t_id = ?",
+            [swapId, tId]
+          );
+
+        if (swaps.length === 0) {
+          return ctx.reply("Swap not found or you are not the creator.");
+        }
+
+        if (swaps[0].status === "Completed") {
+          ctx.answerCbQuery();
+          return ctx.reply("This swap has already been completed.");
+        }
+        // delete the swap
+        await conn.query(
+          "UPDATE swaps SET status = ? WHERE swapId = ? AND from_t_id = ?",
+          ["Completed", swapId, tId]
+        );
+
+        // get all the requests for this swap (on firebase)
+        const docRef = doc(fireDb, COLLECTION_NAME, swapId.toString());
+        const data = await getDoc(docRef);
+
+        // for each request, notify the user that the swap has been completed
+        if (data.exists()) {
+          const docData = data.data() as SwapReplies;
+          const requests = docData.requests;
+          for (const req of requests) {
+            // sendTelegramAlert(
+            //   UserEvent.SWAP_REQUESTED_COMPLETED,
+            //   req.requestorId,
+            //   Number(swapId),
+            //   req.requestorName
+            // );
+            handleRequestedSwapCompleted(
+              {
+                t_id: req.requestorId,
+                name: req.requestorName,
+                swap_id: Number(swapId),
+                event: UserEvent.SWAP_REQUESTED_COMPLETED,
+              },
+              swaps[0]
+            );
+          }
+        }
+
+        // send a notif to the creator
+        handleCreatedSwapCompleted(
+          {
+            t_id: parseInt(tId),
+            name: ctx.from?.first_name || "there",
+            swap_id: Number(swapId),
+            event: UserEvent.SWAP_CREATED_COMPLETED,
+          },
+          swaps[0]
+        );
+
+        ctx.answerCbQuery("Marked swap as completed!");
+
+        // delete the "complete" button message
+        return ctx.editMessageReplyMarkup({
+          inline_keyboard: [
+            [
+              {
+                text: "View swap request",
+                url: `${ROOT_URL}swap/${swapId}`,
+              },
+            ],
+          ],
+        });
+      }
+    } catch (e) {
+      console.error("Error handling callback query:", e);
+      ctx.reply(
+        "An error occurred while processing your request. Please try again later."
+      );
+    }
+  });
 
   const onUpdate = async (snapshot: QuerySnapshot<DocumentData>) => {
     console.log("Recieved a live update!");
@@ -164,6 +268,26 @@ import {
 
           bot.telegram.sendMessage(swap.from_t_id, msg, {
             parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "View swap request",
+                    url: `${ROOT_URL}swap/${swap.swap_id}`,
+                  },
+                  // {
+                  //   text: "Share swap request",
+
+                  // }
+                ],
+                [
+                  {
+                    text: "Complete swap ✅",
+                    callback_data: `complete_${swap.swap_id}_${swap.from_t_id}`,
+                  },
+                ],
+              ],
+            },
           });
         } catch (e) {
           console.error("Error while notifying requestor:", e);

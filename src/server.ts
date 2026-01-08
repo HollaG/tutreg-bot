@@ -1,6 +1,10 @@
 import express, { Request, Response } from "express";
 import { bot } from ".";
-import { ClassSwapRequest, ModuleWithClassDB } from "./types/types";
+import {
+  ClassSwapRequest,
+  ClassSwapRequestDB,
+  ModuleWithClassDB,
+} from "./types/types";
 import db from "mysql2/promise";
 
 const app = express();
@@ -9,7 +13,7 @@ const PORT = Number(process.env.PORT) || 9000;
 
 app.use(express.json());
 
-const ROOT_URL = process.env.ROOT_URL || "http://localhost:3000";
+export const ROOT_URL = process.env.ROOT_URL || "http://localhost:3000";
 
 export enum UserEvent {
   SWAP_CREATED,
@@ -34,7 +38,7 @@ app.post(
 
     // get info about the swap
     const [swaps]: [
-      (ClassSwapRequest & { can_notify: boolean })[],
+      (ClassSwapRequestDB & { can_notify: boolean })[],
       db.FieldPacket[]
     ] = await conn.query(
       `SELECT * FROM swaps LEFT JOIN users ON swaps.from_t_id = users.id WHERE swapId = ?`,
@@ -82,22 +86,42 @@ app.post(
 
 const handleSwapCreated = (
   body: SendMessageRequest,
-  swap: ClassSwapRequest
+  swap: ClassSwapRequestDB
 ) => {
   const header = `✅ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap request created</b></a> ✅\n\n`;
   const msg =
     header +
-    `Hi ${body.name}, your swap for <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b> has been created successfully! If anyone wants to swap with you, you'll be notified here. Good luck!`;
+    `Hi ${body.name}, your swap for <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b> has been created successfully! If anyone wants to swap with you, you'll be notified here. Good luck!\n\n<i>Please remember to mark your swap as completed if you have successfully swapped with someone.</i>`;
 
   console.log("Swap Created Message:", msg);
   bot.telegram.sendMessage(body.t_id, msg, {
     parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: "View swap request",
+            url: `${ROOT_URL}swap/${body.swap_id}`,
+          },
+          // {
+          //   text: "Share swap request",
+
+          // }
+        ],
+        [
+          {
+            text: "Complete swap ✅",
+            callback_data: `complete_${body.swap_id}_${body.t_id}`,
+          },
+        ],
+      ],
+    },
   });
 };
 
 const handleSwapRequested = (
   body: SendMessageRequest,
-  swap: ClassSwapRequest
+  swap: ClassSwapRequestDB
 ) => {
   const header = `✅ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap requested</b></a> ✅\n\n`;
 
@@ -108,9 +132,9 @@ const handleSwapRequested = (
     parse_mode: "HTML",
   });
 };
-const handleRequestedSwapCompleted = (
+export const handleRequestedSwapCompleted = (
   body: SendMessageRequest,
-  swap: ClassSwapRequest
+  swap: ClassSwapRequestDB
 ) => {
   const header = `✅ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap request completed</b></a> ✅\n\n`;
   const msg =
@@ -120,9 +144,9 @@ const handleRequestedSwapCompleted = (
     parse_mode: "HTML",
   });
 };
-const handleCreatedSwapCompleted = (
+export const handleCreatedSwapCompleted = (
   body: SendMessageRequest,
-  swap: ClassSwapRequest
+  swap: ClassSwapRequestDB
 ) => {
   const header = `✅ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap completed</b></a> ✅\n\n`;
   const msg =
