@@ -99,7 +99,7 @@ export const buildSwapRequestMessage = (
   otherClasses: ModuleWithClassDB[],
   creatorClasses: ModuleWithClassDB[]
 ) => {
-  let header = `❗️ <a href='${ROOT_URL}swap/${swap.swapId}'><b>Swap request update</b></a> ❗️\n\nHi ${swap.first_name},\n\n`;
+  let header = `❗️ <b>Swap request update</b> ❗️\n\nHi ${swap.first_name},\n\n`;
 
   header += `<a href='t.me/${otherRequestor.username}'>${otherRequestor.first_name}</a> has requested to swap their\n<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swapReplyRequest.requested.moduleCode}</a> ${swapReplyRequest.requested.lessonType} [${swapReplyRequest.requested.classNo}]</b>\n`;
 

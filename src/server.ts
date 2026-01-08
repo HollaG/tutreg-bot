@@ -145,19 +145,21 @@ const handleSwapCreated = async (
     },
   });
 };
-
+// for other people requesting
 export const handleRequestedSwapCompleted = (
   body: SendMessageRequest,
   swap: ClassSwapRequestDB
 ) => {
-  const header = `✅ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap request completed</b></a> ✅\n\n`;
+  const header = `⚠️ <a href='${ROOT_URL}swap/${body.swap_id}'><b>Swap request update</b></a> ⚠️\n\n`;
   const msg =
     header +
-    `Hi ${body.name}, the class <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b> that you requested for has been swapped. \n\n<i>If the creator did not contact you, this means the swap has been completed with someone else. Feel free to create a new swap request if you still wish for a swap. Thank you for using TutReg!</i>\n\n${feedback}`;
+    `Hi ${body.name}, you previously requested for a swap to <b>${swap.moduleCode} ${swap.lessonType} [${swap.classNo}]</b>. \nThis swap has been marked as <b>completed</b> - if the creator did not contact you, this means the swap has been completed with someone else.\n\n Feel free to create a new swap request if you still wish for a swap. Thank you for using TutReg!</i>\n\n${feedback}`;
   bot.telegram.sendMessage(body.t_id, msg, {
     parse_mode: "HTML",
   });
 };
+
+// for the swap creator
 export const handleCreatedSwapCompleted = (
   body: SendMessageRequest,
   swap: ClassSwapRequestDB
