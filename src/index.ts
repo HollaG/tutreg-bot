@@ -23,6 +23,7 @@ import { cleanArrayString } from "./lib/functions.js";
 import cron from "cron";
 import {
   addCollectionListener,
+  buildRequestSwapMessage,
   buildSwapRequestMessage,
   COLLECTION_NAME,
   fireDb,
@@ -240,7 +241,7 @@ import {
           }
 
           // get the classes that the other person has and wants to swap with original
-          // might be more than 1 class
+          // might be more than 1 class timing
 
           const [otherClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
             await conn.query(
@@ -258,7 +259,7 @@ import {
             throw new Error("Could not find the other person's class");
           }
 
-          // build a message to send
+          // build a message to send to the CREATOR
           const msg = buildSwapRequestMessage(
             newRequestToNotify,
             swap,
@@ -290,6 +291,34 @@ import {
               ],
             },
           });
+
+          const requestorMsg = buildRequestSwapMessage(
+            newRequestToNotify,
+            swap,
+            otherRequestor,
+            otherClasses,
+            creatorClasses
+          );
+
+          bot.telegram.sendMessage(otherRequestor.id.toString(), requestorMsg, {
+            parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "View swap request",
+                    url: `${ROOT_URL}swap/${swap.swapId}`,
+                  },
+                  // {
+                  //   text: "Share swap request",
+
+                  // }
+                ],
+              ],
+            },
+          });
+
+          // build a message to send to the REQUESTOR
         } catch (e) {
           console.error("Error while notifying requestor:", e);
         }

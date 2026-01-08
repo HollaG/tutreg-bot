@@ -23,7 +23,7 @@ import {
   ModuleWithClassDB,
   SwapReplyRequest,
 } from "../types/types";
-import { convertDayToAbbrev } from "./functions";
+import { combineNumbersDatabase, convertDayToAbbrev } from "./functions";
 import { ROOT_URL } from "../server";
 
 // TODO: Add SDKs for Firebase products that you want to use
@@ -82,6 +82,16 @@ export const addCollectionListener = (onUpdate: {
   // doc(documentPath).onSnapshot(onUpdate);
 };
 
+/**
+ * Builds a message to be sent to the swap creator
+ *
+ * @param swapReplyRequest
+ * @param swap
+ * @param otherRequestor
+ * @param otherClasses
+ * @param creatorClasses
+ * @returns
+ */
 export const buildSwapRequestMessage = (
   swapReplyRequest: SwapReplyRequest,
   swap: ClassSwapRequest,
@@ -96,21 +106,21 @@ export const buildSwapRequestMessage = (
   otherClasses.forEach((c, i) => {
     header += `${
       i !== otherClasses.length - 1 ? "├" : "└"
-    } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${c.endTime} @ ${
-      c.venue
-    }\n`;
+    } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${
+      c.endTime
+    } (Wks ${combineNumbersDatabase(c.weeks)})\n`;
   });
 
   header += `\n`;
 
   header += `for your\n\n`;
-  header += `<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swap.moduleCode}</a> ${swap.lessonType} [${swap.classNo}]</b>\n`;
+  header += `<b><a href="https://nusmods.com/courses/${swap.moduleCode}">${swap.moduleCode}</a> ${swap.lessonType} [${swap.classNo}]</b>\n`;
   creatorClasses.forEach((c, i) => {
     header += `${
       i !== otherClasses.length - 1 ? "├" : "└"
-    } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${c.endTime} @ ${
-      c.venue
-    }\n`;
+    } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${
+      c.endTime
+    } (Wks ${combineNumbersDatabase(c.weeks)})\n`;
   });
 
   header += `\n`;
@@ -120,5 +130,49 @@ export const buildSwapRequestMessage = (
   }
 
   header += `Contact them <a href='t.me/${otherRequestor.username}'> here </a> to discuss further.\n\n`;
+  return header;
+};
+
+/**
+ * Builds a message to be sent to the swap requestor (aka person who clicked Request)
+ */
+export const buildRequestSwapMessage = (
+  swapReplyRequest: SwapReplyRequest,
+  swap: ClassSwapRequest,
+  otherRequestor: ExtendedUser,
+  otherClasses: ModuleWithClassDB[],
+  creatorClasses: ModuleWithClassDB[]
+) => {
+  let header = `⌛️ <a href='${ROOT_URL}swap/${swap.swapId}'><b>Swap request sent</b></a> ⌛️\n\nHi ${otherRequestor.first_name},\n\n`;
+
+  header += `You have requested to swap your\n<b><a href="https://nusmods.com/courses/${swapReplyRequest.requested.moduleCode}">${swapReplyRequest.requested.moduleCode}</a> ${swapReplyRequest.requested.lessonType} [${swapReplyRequest.requested.classNo}]</b>\n`;
+
+  otherClasses.forEach((c, i) => {
+    header += `${
+      i !== otherClasses.length - 1 ? "├" : "└"
+    } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${
+      c.endTime
+    } (Wks ${combineNumbersDatabase(c.weeks)})\n`;
+  });
+
+  header += `\n`;
+
+  header += `for their\n\n`;
+  header += `<b><a href="https://nusmods.com/courses/${swap.moduleCode}">${swap.moduleCode}</a> ${swap.lessonType} [${swap.classNo}]</b>\n`;
+  creatorClasses.forEach((c, i) => {
+    header += `${
+      i !== otherClasses.length - 1 ? "├" : "└"
+    } ${convertDayToAbbrev(c.day)} ${c.startTime} — ${
+      c.endTime
+    } (Wks ${combineNumbersDatabase(c.weeks)})\n`;
+  });
+
+  header += `\n`;
+
+  if (swapReplyRequest.comments) {
+    header += `You included the following comments:\n<i>"${swapReplyRequest.comments}"</i>\n\n`;
+  }
+
+  header += `Your contact information has been shared with the swap creator. Please wait for them to contact you.\n\n`;
   return header;
 };
