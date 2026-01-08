@@ -78,12 +78,15 @@ import {
       );
 
       // since we don't use batched requests, there should only be one new request at all times.
-      if (newRequestsToNotify.length !== 1) {
-        // no new requests to notify
+      // TODO: check the reliability of this system
+      // if (newRequestsToNotify.length !== 1) {
+      //   // no new requests to notify
+      //   return console.log("No new requests to notify");
+      // }
+
+      if (newRequestsToNotify.length === 0) {
         return console.log("No new requests to notify");
       }
-
-      const newRequestToNotify = newRequestsToNotify[0];
 
       const [swaps]: [
         (ClassSwapRequest & { can_notify: boolean })[],
@@ -95,40 +98,6 @@ import {
 
       if (!swaps.length) return console.log("ERROR: no swaps with this id");
       const swap = swaps[0];
-      const [otherRequestorArray]: [ExtendedUser[], db.FieldPacket[]] =
-        await conn.query(`SELECT * FROM users WHERE id = ?`, [
-          newRequestToNotify.requestorId,
-        ]);
-      if (!otherRequestorArray.length)
-        return console.log("ERROR: no user with this id");
-
-      const otherRequestor = otherRequestorArray[0];
-
-      if (!swap.can_notify) {
-        return console.log("ERROR: user has disabled notifications");
-      }
-
-      // get the classes that the other person has and wants to swap with original
-      // might be more than 1 class
-
-      const [otherClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
-        await conn.query(
-          `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,
-          [
-            process.env.AY,
-            process.env.SEM,
-            newRequestToNotify.requested.moduleCode,
-            newRequestToNotify.requested.lessonType,
-            newRequestToNotify.requested.classNo,
-          ]
-        );
-
-      if (!otherClasses.length) {
-        // TODO: refresh
-        return console.log(
-          "ERROR: Could not find the class that the other person wants to swap with original"
-        );
-      }
 
       // get the creator's class
       const [creatorClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
@@ -144,21 +113,63 @@ import {
         );
 
       if (!creatorClasses.length) {
-        return console.log("ERROR: Could not find the creator's class");
+        // return console.log("ERROR: Could not find the creator's class");
+        throw new Error("Could not find the creator's class");
       }
 
-      // build a message to send
-      const msg = buildSwapRequestMessage(
-        newRequestToNotify,
-        swap,
-        otherRequestor,
-        otherClasses,
-        creatorClasses
-      );
+      for (const newRequestToNotify of newRequestsToNotify) {
+        try {
+          const [otherRequestorArray]: [ExtendedUser[], db.FieldPacket[]] =
+            await conn.query(`SELECT * FROM users WHERE id = ?`, [
+              newRequestToNotify.requestorId,
+            ]);
+          if (!otherRequestorArray.length) {
+            // return console.log("ERROR: no user with this id");
+            throw new Error("Could not find other requestor");
+          }
 
-      bot.telegram.sendMessage(swap.from_t_id, msg, {
-        parse_mode: "HTML",
-      });
+          const otherRequestor = otherRequestorArray[0];
+
+          if (!swap.can_notify) {
+            console.log("ERROR: user has disabled notifications");
+            continue;
+          }
+
+          // get the classes that the other person has and wants to swap with original
+          // might be more than 1 class
+
+          const [otherClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
+            await conn.query(
+              `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,
+              [
+                process.env.AY,
+                process.env.SEM,
+                newRequestToNotify.requested.moduleCode,
+                newRequestToNotify.requested.lessonType,
+                newRequestToNotify.requested.classNo,
+              ]
+            );
+
+          if (!otherClasses.length) {
+            throw new Error("Could not find the other person's class");
+          }
+
+          // build a message to send
+          const msg = buildSwapRequestMessage(
+            newRequestToNotify,
+            swap,
+            otherRequestor,
+            otherClasses,
+            creatorClasses
+          );
+
+          bot.telegram.sendMessage(swap.from_t_id, msg, {
+            parse_mode: "HTML",
+          });
+        } catch (e) {
+          console.error("Error while notifying requestor:", e);
+        }
+      }
 
       // update the request to 'notified'
       updateDoc(change.doc.ref, {

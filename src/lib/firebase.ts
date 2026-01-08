@@ -115,6 +115,10 @@ export const buildSwapRequestMessage = (
 
   header += `\n`;
 
+  if (swapReplyRequest.comments) {
+    header += `They included the following comments:\n<i>"${swapReplyRequest.comments}"</i>\n\n`;
+  }
+
   header += `Contact them <a href='t.me/${otherRequestor.username}'> here </a> to discuss further.\n\n`;
   return header;
 };
