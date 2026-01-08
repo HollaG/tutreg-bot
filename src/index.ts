@@ -77,7 +77,7 @@ import {
       console.log(JSON.stringify(ctx.callbackQuery, null, 2));
       const cbData = ctx.callbackQuery;
 
-      // @ts-expect-error
+      // @ts-ignore
       const cId = cbData.data;
 
       const [id, swapId, tId] = (cId as string).split("_");
