@@ -44,15 +44,16 @@ import {
   UserEvent,
 } from "./server";
 (async () => {
-  const conn = await db
-    .createConnection({
-      host: process.env.MYSQL_HOST,
-      user: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE,
-      port: parseInt(process.env.MYSQL_PORT as string),
-    })
-    .then((conn) => conn);
+  const pool = db.createPool({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    port: parseInt(process.env.MYSQL_PORT as string),
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
 
   const signedInSuccessfully = await signIn();
 
@@ -87,7 +88,7 @@ import {
         /** The following code is duplicated from the main tutreg repository: pages\api\swap\[swapId].ts:295 */
         // get the swap
         const [swaps]: [ClassSwapRequestDB[], db.FieldPacket[]] =
-          await conn.query(
+          await pool.query(
             "SELECT * FROM swaps WHERE swapId = ? AND from_t_id = ?",
             [swapId, tId]
           );
@@ -102,7 +103,7 @@ import {
           return ctx.reply("This swap has already been completed.");
         }
         // delete the swap
-        await conn.query(
+        await pool.query(
           "UPDATE swaps SET status = ? WHERE swapId = ? AND from_t_id = ?",
           ["Completed", swapId, tId]
         );
@@ -196,7 +197,7 @@ import {
       const [swaps]: [
         (ClassSwapRequest & { can_notify: boolean })[],
         db.FieldPacket[]
-      ] = await conn.query(
+      ] = await pool.query(
         `SELECT * FROM swaps LEFT JOIN users ON swaps.from_t_id = users.id WHERE swapId = ?`,
         [swapId]
       );
@@ -206,7 +207,7 @@ import {
 
       // get the creator's class
       const [creatorClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
-        await conn.query(
+        await pool.query(
           `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,
           [
             process.env.AY,
@@ -225,7 +226,7 @@ import {
       for (const newRequestToNotify of newRequestsToNotify) {
         try {
           const [otherRequestorArray]: [ExtendedUser[], db.FieldPacket[]] =
-            await conn.query(`SELECT * FROM users WHERE id = ?`, [
+            await pool.query(`SELECT * FROM users WHERE id = ?`, [
               newRequestToNotify.requestorId,
             ]);
           if (!otherRequestorArray.length) {
@@ -244,7 +245,7 @@ import {
           // might be more than 1 class timing
 
           const [otherClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
-            await conn.query(
+            await pool.query(
               `SELECT * FROM modulelist LEFT JOIN classlist ON modulelist.moduleCode = classlist.moduleCode WHERE ay = ? AND semester = ? AND classlist.moduleCode = ? AND classlist.lessonType = ? AND classlist.classNo = ?`,
               [
                 process.env.AY,

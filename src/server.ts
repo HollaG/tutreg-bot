@@ -9,7 +9,7 @@ import db from "mysql2/promise";
 import { combineNumbersDatabase, convertDayToAbbrev } from "./lib/functions";
 
 const app = express();
-let conn: db.Connection;
+let pool: db.Pool;
 const PORT = Number(process.env.PORT) || 9000;
 
 app.use(express.json());
@@ -41,7 +41,7 @@ app.post(
     const [swaps]: [
       (ClassSwapRequestDB & { can_notify: boolean })[],
       db.FieldPacket[]
-    ] = await conn.query(
+    ] = await pool.query(
       `SELECT * FROM swaps LEFT JOIN users ON swaps.from_t_id = users.id WHERE swapId = ?`,
       [swap_id]
     );
@@ -94,7 +94,7 @@ const handleSwapCreated = async (
   // details of the creator's class
 
   const [creatorClasses]: [ModuleWithClassDB[], db.FieldPacket[]] =
-    await conn.query(
+    await pool.query(
       `SELECT * FROM classlist WHERE ay = ? AND semester = ? AND moduleCode = ? AND lessonType = ? AND classNo = ?`,
       [
         process.env.AY,
@@ -174,15 +174,16 @@ export const handleCreatedSwapCompleted = (
 };
 
 (async () => {
-  conn = await db
-    .createConnection({
-      host: process.env.MYSQL_HOST,
-      user: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE,
-      port: parseInt(process.env.MYSQL_PORT as string),
-    })
-    .then((conn) => conn);
+  pool = db.createPool({
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
+    port: parseInt(process.env.MYSQL_PORT as string),
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
 
   app.listen(PORT, "localhost", () => {
     console.log(`Server is running on localhost:${PORT}`);
